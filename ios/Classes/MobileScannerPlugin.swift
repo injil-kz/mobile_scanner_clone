@@ -11,7 +11,7 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin {
     
     /// The handler sends all information via an event channel back to Flutter
     private let barcodeHandler: BarcodeHandler
-    
+
     /// Whether to return the input image with the barcode event.
     /// This is static to avoid accessing `self` in the callback in the constructor.
     private static var returnImage: Bool = false
@@ -48,27 +48,27 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin {
                                  details: nil))
                 return
             }
-            
+
             if barcodes == nil {
                 return
             }
-            
+
             let barcodesMap: [Any?] = barcodes!.compactMap { barcode in
                 if (MobileScannerPlugin.scanWindow == nil) {
                     return barcode.data
                 }
-                
+
                 if (MobileScannerPlugin.isBarcodeInScanWindow(barcode: barcode, imageSize: image.size)) {
                     return barcode.data
                 }
 
                 return nil
             }
-            
+
             if (barcodesMap.isEmpty) {
                 return
             }
-            
+
             if (!MobileScannerPlugin.returnImage) {
                 barcodeHandler.publishEvent([
                     "name": "barcode",
@@ -76,7 +76,7 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin {
                 ])
                 return
             }
-            
+
             barcodeHandler.publishEvent([
                 "name": "barcode",
                 "data": barcodesMap,
@@ -115,6 +115,8 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin {
             toggleTorch(result)
         case "analyzeImage":
             analyzeImage(call, result)
+        case "setInvertImage":
+            setInvertImage(call, result)
         case "setScale":
             setScale(call, result)
         case "resetScale":
@@ -132,6 +134,7 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin {
         let facing: Int = (call.arguments as! Dictionary<String, Any?>)["facing"] as? Int ?? 1
         let formats: Array<Int> = (call.arguments as! Dictionary<String, Any?>)["formats"] as? Array ?? []
         let returnImage: Bool = (call.arguments as! Dictionary<String, Any?>)["returnImage"] as? Bool ?? false
+        let invertImage: Bool = (call.arguments as! Dictionary<String, Any?>)["invertImage"] as? Bool ?? false
         let speed: Int = (call.arguments as! Dictionary<String, Any?>)["speed"] as? Int ?? 0
         let timeoutMs: Int = (call.arguments as! Dictionary<String, Any?>)["timeout"] as? Int ?? 0
         self.mobileScanner.timeoutSeconds = Double(timeoutMs) / Double(1000)
@@ -143,7 +146,7 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin {
         let detectionSpeed: DetectionSpeed = DetectionSpeed(rawValue: speed)!
 
         do {
-            try mobileScanner.start(barcodeScannerOptions: barcodeOptions, cameraPosition: position, torch: torch, detectionSpeed: detectionSpeed) { parameters in
+            try mobileScanner.start(barcodeScannerOptions: barcodeOptions,invertImage: invertImage, cameraPosition: position, torch: torch, detectionSpeed: detectionSpeed) { parameters in
                 DispatchQueue.main.async {
                     result([
                         "textureId": parameters.textureId,
@@ -185,6 +188,20 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin {
         result(nil)
     }
     
+
+    /// Sets the zoomScale.
+    private func setInvertImage(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+        let invert = call.arguments as? Bool
+        if (invert == nil) {
+            result(FlutterError(code: "MobileScanner",
+                                message: "You must provide a invert (bool) when calling setInvertImage",
+                                details: nil))
+            return
+        }
+        mobileScanner.setInvertImage(invert!)
+        result(nil)
+    }
+
     /// Sets the zoomScale.
     private func setScale(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
         let scale = call.arguments as? CGFloat
@@ -281,18 +298,18 @@ public class MobileScannerPlugin: NSObject, FlutterPlugin {
                 DispatchQueue.main.async {
                     result(nil)
                 }
-                
+
                 return
             }
-            
+
             let barcodesMap: [Any?] = barcodes!.compactMap { barcode in barcode.data }
-            
+
             DispatchQueue.main.async {
                 result(["name": "barcode", "data": barcodesMap])
             }
         })
     }
-    
+
     private func buildBarcodeScannerOptions(_ formats: [Int]) -> BarcodeScannerOptions? {
         guard !formats.isEmpty else {
             return nil

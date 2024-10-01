@@ -129,6 +129,7 @@ class MobileScannerHandler(
             "setScale" -> setScale(call, result)
             "resetScale" -> resetScale(result)
             "updateScanWindow" -> updateScanWindow(call, result)
+            "setInvertImage" -> setInvertImage(call, result)
             else -> result.notImplemented()
         }
     }
@@ -139,6 +140,7 @@ class MobileScannerHandler(
         val facing: Int = call.argument<Int>("facing") ?: 0
         val formats: List<Int>? = call.argument<List<Int>>("formats")
         val returnImage: Boolean = call.argument<Boolean>("returnImage") ?: false
+        val invertImage: Boolean = call.argument<Boolean>("invertImage") ?: false
         val speed: Int = call.argument<Int>("speed") ?: 1
         val timeout: Int = call.argument<Int>("timeout") ?: 250
         val cameraResolutionValues: List<Int>? = call.argument<List<Int>>("cameraResolution")
@@ -163,6 +165,7 @@ class MobileScannerHandler(
         mobileScanner!!.start(
             barcodeScannerOptions,
             returnImage,
+            invertImage,
             position,
             torch,
             detectionSpeed,
@@ -270,6 +273,15 @@ class MobileScannerHandler(
 
     private fun updateScanWindow(call: MethodCall, result: MethodChannel.Result) {
         mobileScanner?.scanWindow = call.argument<List<Float>?>("rect")
+
+        result.success(null)
+    }
+
+    private fun setInvertImage(call: MethodCall, result: MethodChannel.Result) {
+        val invert = call.argument<Boolean?>("invertImage")
+
+        if (invert != null)
+            mobileScanner?.invertImage = invert
 
         result.success(null)
     }

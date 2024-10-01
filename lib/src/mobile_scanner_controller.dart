@@ -25,9 +25,9 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     this.formats = const <BarcodeFormat>[],
     this.returnImage = false,
     this.torchEnabled = false,
+    this.invertImage = false,
     this.useNewCameraSelector = false,
-  })  : detectionTimeoutMs =
-            detectionSpeed == DetectionSpeed.normal ? detectionTimeoutMs : 0,
+  })  : detectionTimeoutMs = detectionSpeed == DetectionSpeed.normal ? detectionTimeoutMs : 0,
         assert(
           detectionTimeoutMs >= 0,
           'The detection timeout must be greater than or equal to 0.',
@@ -88,6 +88,11 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   /// Defaults to false.
   final bool torchEnabled;
 
+  /// Whether the image should be inverted before scanning.
+  ///
+  /// Defaults to false.
+  final bool invertImage;
+
   /// Use the new resolution selector.
   ///
   /// This feature is experimental and not fully tested yet.
@@ -98,8 +103,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   final bool useNewCameraSelector;
 
   /// The internal barcode controller, that listens for detected barcodes.
-  final StreamController<BarcodeCapture> _barcodesController =
-      StreamController.broadcast();
+  final StreamController<BarcodeCapture> _barcodesController = StreamController.broadcast();
 
   /// Get the stream of scanned barcodes.
   ///
@@ -123,26 +127,26 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     _zoomScaleSubscription = null;
   }
 
-  void _setupListeners() {
+  void _setupListeners(){
     _barcodesSubscription =
         MobileScannerPlatform.instance.barcodesStream.listen(
-      (BarcodeCapture? barcode) {
-        if (_barcodesController.isClosed || barcode == null) {
-          return;
-        }
+              (BarcodeCapture? barcode) {
+            if (_barcodesController.isClosed || barcode == null) {
+              return;
+            }
 
-        _barcodesController.add(barcode);
-      },
-      onError: (Object error) {
-        if (_barcodesController.isClosed) {
-          return;
-        }
+            _barcodesController.add(barcode);
+          },
+          onError: (Object error) {
+            if (_barcodesController.isClosed) {
+              return;
+            }
 
-        _barcodesController.addError(error);
-      },
-      // Errors are handled gracefully by forwarding them.
-      cancelOnError: false,
-    );
+            _barcodesController.addError(error);
+          },
+          // Errors are handled gracefully by forwarding them.
+          cancelOnError: false,
+        );
 
     _torchStateSubscription = MobileScannerPlatform.instance.torchStateStream
         .listen((TorchState torchState) {
@@ -177,12 +181,12 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
       throw const MobileScannerException(
         errorCode: MobileScannerErrorCode.controllerDisposed,
         errorDetails: MobileScannerErrorDetails(
-          message:
-              'The MobileScannerController was used after it has been disposed.',
+          message: 'The MobileScannerController was used after it has been disposed.',
         ),
       );
     }
   }
+
 
   /// Analyze an image file.
   ///
@@ -257,10 +261,16 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
       throw const MobileScannerException(
         errorCode: MobileScannerErrorCode.controllerDisposed,
         errorDetails: MobileScannerErrorDetails(
-          message:
-              'The MobileScannerController was used after it has been disposed.',
+          message: 'The MobileScannerController was used after it has been disposed.',
         ),
       );
+    }
+
+    // Permission was denied, do nothing.
+    // When the controller is stopped,
+    // the error is reset so the permission can be requested again if possible.
+    if (value.error?.errorCode == MobileScannerErrorCode.permissionDenied) {
+      return;
     }
 
     // Do nothing if the camera is already running.
@@ -278,14 +288,14 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
       formats: formats,
       returnImage: returnImage,
       torchEnabled: torchEnabled,
+      invertImage: invertImage,
       useNewCameraSelector: useNewCameraSelector,
     );
 
     try {
       _setupListeners();
 
-      final MobileScannerViewAttributes viewAttributes =
-          await MobileScannerPlatform.instance.start(
+      final MobileScannerViewAttributes viewAttributes = await MobileScannerPlatform.instance.start(
         options,
       );
 
@@ -323,6 +333,8 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
           zoomScale: 1.0,
         );
       }
+    } on PermissionRequestPendingException catch (_) {
+      // If a permission request was already pending, do nothing.
     }
   }
 
@@ -349,9 +361,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     // If the device does not have a torch, do not report "off".
     value = value.copyWith(
       isRunning: false,
-      torchState: oldTorchState == TorchState.unavailable
-          ? TorchState.unavailable
-          : TorchState.off,
+      torchState: oldTorchState == TorchState.unavailable ? TorchState.unavailable : TorchState.off,
     );
 
     await MobileScannerPlatform.instance.stop();
@@ -377,9 +387,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     final CameraFacing cameraDirection = value.cameraDirection;
 
     await start(
-      cameraDirection: cameraDirection == CameraFacing.front
-          ? CameraFacing.back
-          : CameraFacing.front,
+      cameraDirection: cameraDirection == CameraFacing.front ? CameraFacing.back : CameraFacing.front,
     );
   }
 
