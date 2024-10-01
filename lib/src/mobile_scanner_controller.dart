@@ -127,29 +127,27 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     _zoomScaleSubscription = null;
   }
 
-  void _setupListeners(){
-    _barcodesSubscription =
-        MobileScannerPlatform.instance.barcodesStream.listen(
-              (BarcodeCapture? barcode) {
-            if (_barcodesController.isClosed || barcode == null) {
-              return;
-            }
+  void _setupListeners() {
+    _barcodesSubscription = MobileScannerPlatform.instance.barcodesStream.listen(
+      (BarcodeCapture? barcode) {
+        if (_barcodesController.isClosed || barcode == null) {
+          return;
+        }
 
-            _barcodesController.add(barcode);
-          },
-          onError: (Object error) {
-            if (_barcodesController.isClosed) {
-              return;
-            }
+        _barcodesController.add(barcode);
+      },
+      onError: (Object error) {
+        if (_barcodesController.isClosed) {
+          return;
+        }
 
-            _barcodesController.addError(error);
-          },
-          // Errors are handled gracefully by forwarding them.
-          cancelOnError: false,
-        );
+        _barcodesController.addError(error);
+      },
+      // Errors are handled gracefully by forwarding them.
+      cancelOnError: false,
+    );
 
-    _torchStateSubscription = MobileScannerPlatform.instance.torchStateStream
-        .listen((TorchState torchState) {
+    _torchStateSubscription = MobileScannerPlatform.instance.torchStateStream.listen((TorchState torchState) {
       if (_isDisposed) {
         return;
       }
@@ -157,8 +155,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
       value = value.copyWith(torchState: torchState);
     });
 
-    _zoomScaleSubscription = MobileScannerPlatform.instance.zoomScaleStateStream
-        .listen((double zoomScale) {
+    _zoomScaleSubscription = MobileScannerPlatform.instance.zoomScaleStateStream.listen((double zoomScale) {
       if (_isDisposed) {
         return;
       }
@@ -186,7 +183,6 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
       );
     }
   }
-
 
   /// Analyze an image file.
   ///
@@ -314,8 +310,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
     } on MobileScannerException catch (error) {
       // If the controller is already initialized, ignore the error.
       // Starting the controller while it is already started, or in the process of starting, is redundant.
-      if (error.errorCode ==
-          MobileScannerErrorCode.controllerAlreadyInitialized) {
+      if (error.errorCode == MobileScannerErrorCode.controllerAlreadyInitialized) {
         return;
       }
 
@@ -333,8 +328,6 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
           zoomScale: 1.0,
         );
       }
-    } on PermissionRequestPendingException catch (_) {
-      // If a permission request was already pending, do nothing.
     }
   }
 

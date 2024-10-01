@@ -172,6 +172,7 @@ class MobileScanner(
                 )
             }.addOnCompleteListener { imageProxy.close() }
         }
+        }
 
         private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
             val matrix = Matrix()
