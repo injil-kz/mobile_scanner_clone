@@ -19,7 +19,7 @@ class MobileScannerController extends ValueNotifier<MobileScannerState> {
   MobileScannerController({
     this.autoStart = true,
     this.cameraResolution,
-    this.detectionSpeed = DetectionSpeed.normal,
+    this.detectionSpeed = DetectionSpeed.unrestricted,
     int detectionTimeoutMs = 250,
     this.facing = CameraFacing.back,
     this.formats = const <BarcodeFormat>[],
